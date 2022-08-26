@@ -106,9 +106,7 @@ Thus, Python will be used instead of the C++ even though C++ due to time constra
 
 ## User Stories
 
-*Assumptions*
-
-- User already built the executable file for the program.
+**A**
 
 Bobcat creates a CSV file with the student OHIO email handle and corresponding Codewars user ID.
 Then Bobcat runs the program and give it the CSV file along with the challenge slug for this week homework assignment.
@@ -120,3 +118,9 @@ that the student did not complete the challenge.
 
 If the challenge slug is found in one of the page, the program reports that the student had completed the challenge. When the
 matching challenge slug is found or the last page is reached, the program report the status and move to the next student.
+
+**B**
+
+This time Bobcat want to check if the list of users complete at least `N` katas. They then call the program with the list of users
+and the value `N`. The program request the API for the compelted katas, and use `totalItems` to check if user complete more than or
+equal to the given value `N`.
