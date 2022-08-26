@@ -4,20 +4,28 @@ from time import sleep
 
 import requests
 
-def user_complete_challenge(codewars_id: str, challenge_slug: str, delay_between_request=2) -> bool:
+
+def user_complete_challenge(
+    codewars_id: str, challenge_slug: str, delay_between_request=2
+) -> bool:
     """True if user compelete kata with a slug `challenge_slug`."""
     current_page = 0
 
     while True:
         payload = {"page": current_page}
-        response_obj = requests.get(f"https://www.codewars.com/api/v1/users/{codewars_id}/code-challenges/completed", params=payload)
+        response_obj = requests.get(
+            f"https://www.codewars.com/api/v1/users/{codewars_id}/code-challenges/completed",
+            params=payload,
+        )
 
         if response_obj.status_code == 200:
             response = response_obj.json()
             if "success" in response.keys() and not response["success"]:
                 raise ValueError("api responds with '{}'".format(response["reason"]))
             if "data" not in response.keys():
-                raise ValueError("api responds payload that does not contain 'data' key")
+                raise ValueError(
+                    "api responds payload that does not contain 'data' key"
+                )
 
             for kata in response["data"]:
                 if kata["slug"] == challenge_slug:
@@ -38,7 +46,10 @@ def user_complete_challenge(codewars_id: str, challenge_slug: str, delay_between
 def user_complete_n_challenges(codewars_id: str, n: int) -> bool:
     """True if user complete more than or equal to `n` katas. False otherwise."""
     payload = {"page": 0}
-    response_obj = requests.get(f"https://www.codewars.com/api/v1/users/{codewars_id}/code-challenges/completed", params=payload)
+    response_obj = requests.get(
+        f"https://www.codewars.com/api/v1/users/{codewars_id}/code-challenges/completed",
+        params=payload,
+    )
 
     if response_obj.status_code == 200:
         response = response_obj.json()
@@ -47,12 +58,15 @@ def user_complete_n_challenges(codewars_id: str, n: int) -> bool:
         if "data" not in response.keys():
             raise ValueError("api responds payload that does not contain 'data' key")
         if "totalItems" not in response.keys():
-            raise ValueError("api responds payload that does not contain 'totalItems' key")
+            raise ValueError(
+                "api responds payload that does not contain 'totalItems' key"
+            )
 
         return response["totalItems"] >= n
 
     elif response_obj.status_code == 404:
-            raise ValueError("cannot find user or challenge")
+        raise ValueError("cannot find user or challenge")
+
 
 def get_line(path):
     with open(path, "r") as f:
@@ -62,7 +76,7 @@ def get_line(path):
                 continue
             if line.strip()[0] == "#":
                 continue
-            
+
             columns = line.strip().split(",")
 
             if len(columns) < 2:
@@ -73,34 +87,60 @@ def get_line(path):
 
             yield (columns[0], columns[1])
 
+
 if __name__ == "__main__":
     from argparse import ArgumentParser
 
     parser = ArgumentParser(description="Codewars Challenge Checker")
-    parser.add_argument("ids_file", metavar="IDs-file", help="A CSV file containing a column for email address handle, and a column for Codewars ID.")
-    parser.add_argument("--slug", metavar="kata-slug", help="Check if user complete a kata with a slug of 'kata-slug'", default="", type=str)
-    parser.add_argument("--n", metavar="N", help="Check if each user complete at least N katas.", default=0, type=int)
-    parser.add_argument("--delay", metavar="DELAY", help="A delay before issue another request", default=2, type=int)
+    parser.add_argument(
+        "ids_file",
+        metavar="IDs-file",
+        help="A CSV file containing a column for email address handle, and a column for Codewars ID.",
+    )
+    parser.add_argument(
+        "--slug",
+        metavar="kata-slug",
+        help="Check if user complete a kata with a slug of 'kata-slug'",
+        default="",
+        type=str,
+    )
+    parser.add_argument(
+        "--n",
+        metavar="N",
+        help="Check if each user complete at least N katas.",
+        default=0,
+        type=int,
+    )
+    parser.add_argument(
+        "--delay",
+        metavar="DELAY",
+        help="A delay before issue another request",
+        default=2,
+        type=int,
+    )
 
     args = parser.parse_args()
-    
+
     if len(args.slug) != 0:
         try:
             result = {}
             for email_handle, codewars_id in get_line(args.ids_file):
-                result[email_handle] = user_complete_challenge(codewars_id=codewars_id, challenge_slug=args.slug)
+                result[email_handle] = user_complete_challenge(
+                    codewars_id=codewars_id, challenge_slug=args.slug
+                )
                 sleep(args.delay)
             print(json.dumps(result))
         except ValueError as e:
             print(f"[error] expect two or more columns in the '{args.ids_file}'")
-                
+
     elif args.n != 0:
         try:
             result = {}
             for email_handle, codewars_id in get_line(args.ids_file):
-                result[email_handle] = user_complete_n_challenges(codewars_id=codewars_id, n=args.n)
+                result[email_handle] = user_complete_n_challenges(
+                    codewars_id=codewars_id, n=args.n
+                )
                 sleep(args.delay)
             print(json.dumps(result))
         except ValueError as e:
             print(f"[error] expect two or more columns in the '{args.ids_file}'")
-    
