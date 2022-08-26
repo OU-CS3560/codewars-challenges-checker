@@ -9,8 +9,11 @@ def user_complete_challenge(
     codewars_id: str, challenge_slug: str, delay_between_request=2
 ) -> bool:
     """True if user compelete kata with a slug `challenge_slug`."""
-    current_page = 0
+    if len(codewars_id.strip()) == 0:
+        # Empty string for a user id is automatically marked as false.
+        return False
 
+    current_page = 0
     while True:
         payload = {"page": current_page}
         response_obj = requests.get(
@@ -45,6 +48,10 @@ def user_complete_challenge(
 
 def user_complete_n_challenges(codewars_id: str, n: int) -> bool:
     """True if user complete more than or equal to `n` katas. False otherwise."""
+    if len(codewars_id.strip()) == 0:
+        # Empty string for a user id is automatically marked as false.
+        return False
+
     payload = {"page": 0}
     response_obj = requests.get(
         f"https://www.codewars.com/api/v1/users/{codewars_id}/code-challenges/completed",
