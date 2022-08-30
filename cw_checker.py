@@ -4,6 +4,8 @@ from time import sleep
 
 import requests
 
+class ApiError(Exception):
+    pass
 
 def user_complete_challenge(
     codewars_id: str, challenge_slug: str, delay_between_request=2
@@ -24,9 +26,9 @@ def user_complete_challenge(
         if response_obj.status_code == 200:
             response = response_obj.json()
             if "success" in response.keys() and not response["success"]:
-                raise ValueError("api responds with '{}'".format(response["reason"]))
+                raise ApiError("api responds with '{}'".format(response["reason"]))
             if "data" not in response.keys():
-                raise ValueError(
+                raise ApiError(
                     "api responds payload that does not contain 'data' key"
                 )
 
@@ -41,7 +43,7 @@ def user_complete_challenge(
             current_page += 1
 
         elif response_obj.status_code == 404:
-            raise ValueError("cannot find user or challenge")
+            raise ApiError("cannot find user or challenge")
 
         sleep(delay_between_request)
 
@@ -61,18 +63,18 @@ def user_complete_n_challenges(codewars_id: str, n: int) -> bool:
     if response_obj.status_code == 200:
         response = response_obj.json()
         if "success" in response.keys() and not response["success"]:
-            raise ValueError("api responds with '{}'".format(response["reason"]))
+            raise ApiError("api responds with '{}'".format(response["reason"]))
         if "data" not in response.keys():
-            raise ValueError("api responds payload that does not contain 'data' key")
+            raise ApiError("api responds payload that does not contain 'data' key")
         if "totalItems" not in response.keys():
-            raise ValueError(
+            raise ApiError(
                 "api responds payload that does not contain 'totalItems' key"
             )
 
         return response["totalItems"] >= n
 
     elif response_obj.status_code == 404:
-        raise ValueError("cannot find user or challenge")
+        raise ApiError("cannot find user or challenge")
 
 
 def get_line(path):
@@ -132,21 +134,28 @@ if __name__ == "__main__":
         try:
             result = {}
             for email_handle, codewars_id in get_line(args.ids_file):
-                result[email_handle] = user_complete_challenge(
-                    codewars_id=codewars_id, challenge_slug=args.slug
-                )
+                try:
+                    result[email_handle] = user_complete_challenge(
+                        codewars_id=codewars_id, challenge_slug=args.slug
+                    )
+                except ApiError as e:
+                    print(f"request to the API endpoint for '{email_handle}' result in an error:", e)
                 sleep(args.delay)
             print(json.dumps(result))
         except ValueError as e:
             print(f"[error] expect two or more columns in the '{args.ids_file}'")
+        
 
     elif args.n != 0:
         try:
             result = {}
             for email_handle, codewars_id in get_line(args.ids_file):
-                result[email_handle] = user_complete_n_challenges(
-                    codewars_id=codewars_id, n=args.n
-                )
+                try:
+                    result[email_handle] = user_complete_n_challenges(
+                        codewars_id=codewars_id, n=args.n
+                    )
+                except ApiError as e:
+                    print(f"request to the API endpoint for '{email_handle}' result in an error:", e)
                 sleep(args.delay)
             print(json.dumps(result))
         except ValueError as e:
