@@ -1,11 +1,36 @@
 """Codewars Challnge Checker"""
 import json
 from time import sleep
+import logging
+from logging.config import dictConfig
 
 import requests
 
+dictConfig(
+    {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "default": {
+                "format": "[%(asctime)s] [%(process)d] [%(levelname)s] in %(module)s: %(message)s",
+                "datefmt": "%Y-%m-%d %H:%M:%S %z",
+            }
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "stream": "ext://sys.stderr",
+                "formatter": "default",
+            }
+        },
+        "root": {"level": "INFO", "handlers": ["console"]},
+    }
+)
+
+
 class ApiError(Exception):
     pass
+
 
 def user_complete_challenge(
     codewars_id: str, challenge_slug: str, delay_between_request=2
@@ -17,6 +42,7 @@ def user_complete_challenge(
 
     current_page = 0
     while True:
+        logging.info("{}: searching on page {}".format(codewars_id, current_page + 1))
         payload = {"page": current_page}
         response_obj = requests.get(
             f"https://www.codewars.com/api/v1/users/{codewars_id}/code-challenges/completed",
@@ -28,16 +54,17 @@ def user_complete_challenge(
             if "success" in response.keys() and not response["success"]:
                 raise ApiError("api responds with '{}'".format(response["reason"]))
             if "data" not in response.keys():
-                raise ApiError(
-                    "api responds payload that does not contain 'data' key"
-                )
+                raise ApiError("api responds payload that does not contain 'data' key")
+
+            logging.debug("full response:")
+            logging.debug(response)
 
             for kata in response["data"]:
                 if kata["slug"] == challenge_slug:
                     return True
 
             # The target kata may not be on this page.
-            if current_page + 1 - response["totalPages"] <= 0:
+            if response["totalPages"] - (current_page + 1) <= 0:
                 # Reached the end of the pages.
                 return False
             current_page += 1
@@ -127,8 +154,15 @@ if __name__ == "__main__":
         default=2,
         type=int,
     )
+    parser.add_argument(
+        "--debug", action="store_true", help="Set logging level to DEBUG"
+    )
 
     args = parser.parse_args()
+
+    if args.debug:
+        logger = logging.getLogger("root")
+        logger.setLevel(logging.DEBUG)
 
     if len(args.slug) != 0:
         try:
@@ -139,12 +173,14 @@ if __name__ == "__main__":
                         codewars_id=codewars_id, challenge_slug=args.slug
                     )
                 except ApiError as e:
-                    print(f"request to the API endpoint for '{email_handle}' result in an error:", e)
+                    print(
+                        f"request to the API endpoint for '{email_handle}' result in an error:",
+                        e,
+                    )
                 sleep(args.delay)
             print(json.dumps(result))
         except ValueError as e:
             print(f"[error] expect two or more columns in the '{args.ids_file}'")
-        
 
     elif args.n != 0:
         try:
@@ -155,7 +191,10 @@ if __name__ == "__main__":
                         codewars_id=codewars_id, n=args.n
                     )
                 except ApiError as e:
-                    print(f"request to the API endpoint for '{email_handle}' result in an error:", e)
+                    print(
+                        f"request to the API endpoint for '{email_handle}' result in an error:",
+                        e,
+                    )
                 sleep(args.delay)
             print(json.dumps(result))
         except ValueError as e:
