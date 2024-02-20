@@ -1,3 +1,6 @@
+> [!NOTE]  
+> Depreated in favor of a GitHub action variant [OU-CS3560/check-codewars-kata](https://github.com/OU-CS3560/check-codewars-kata)
+
 # Codewars Challenge Checker
 
 ## Requirements
